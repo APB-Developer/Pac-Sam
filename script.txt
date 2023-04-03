@@ -1,0 +1,21 @@
+; Script to convert graphics for PacSam
+; First Load the tile image
+LOAD "Source Graphics\Maze.png"
+
+; Grab the palette
+GRAB_PALETTE "Maze"
+
+; Grab a blank tile for tile 0
+GRAB_BLANK_TILE "Maze", 6, 6, 0, 0, 0
+
+; Now grab the standard pill 
+GRAB_TILE "Maze", 6, 6, 6, 6
+
+; Grab a power pill
+GRAB_TILE "Maze", 6, 18, 6, 6
+
+; Finally grab the entire Maze
+GRAB_TILEMAP "Maze", "Maze", 6, 6
+
+; Export everything
+OUTPUTALL_ASM "Data\Maze.s"

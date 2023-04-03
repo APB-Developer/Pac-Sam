@@ -1,0 +1,14 @@
+8000=Start
+8028=Loop
+802A=RENDER_Tilemap
+8030=_HeightLoop
+8034=_WidthLoop
+8037=_TileLookupSMC
+8046=RENDER_DrawTile6x6
+80A0=PAL_Maze
+80A5=TILESET_Maze
+8309=TILEMAP_Maze
+866D=MazeTileLookup
+86B1=RenderPage
+86B2=Stack
+8732=StackEnd
