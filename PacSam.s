@@ -17,8 +17,8 @@ Start:                      di
                             ld      sp, StackEnd
 
                             ; Set the palette
-                            ld      hl, PAL_Maze+PAL_Maze_Length-1
-                            ld      b, PAL_Maze_Length
+                            ld      hl, PAL_Game+PAL_Game_Length-1
+                            ld      b, PAL_Game_Length
                             ld      c, 248
                             otdr
 
@@ -37,141 +37,167 @@ Start:                      di
                             ld      de, MazeTileLookup
                             ld      b, TILEMAP_Maze_Height
                             ld      c, TILEMAP_Maze_Width
-                            call    RENDER_Tilemap
+                            call    TILEMAP_Render
+
+                            ; Clear the background store
+                            ld      hl, BackgroundStore
+                            ld      a, 255
+                            ld      (hl), a
+                            ld      (BackgroundStoreAddress), hl
 
 Loop:
+                            ld      bc, 5000
+_Delay:                     nop
+                            dec     bc
+                            ld      a, b
+                            or      c
+                            jr      nz, _Delay
+
+                            ; Erase all sprites
+                            ld      hl, BackgroundStore
+                            ld      (BackgroundStoreAddress), hl
+                            call    SPRITE_EraseAll
+                            
+                            ; Render the sprites
+                            ld      hl, SPR_Closed
+                            ld      a, (PacMan_X)
+                            ld      e, a
+                            ld      a, (PacMac_Y)
+                            ld      d, a
+
+                            call    SPRITE_Render12x12
+
+                            ld      hl, SPR_Left1
+                            ld      a, (PacMan_X)
+                            add     a, 10
+                            ld      e, a
+                            ld      a, (PacMac_Y)
+                            add     a, 20
+                            ld      d, a
+
+                            call    SPRITE_Render12x12
+
+                            ld      a, (PacMan_X)
+                            inc     a
+                            ld      (PacMan_X), a
+
                             jr      Loop
 
 ;********************************************************************
-; HL = Tilemap Address
-; DE = Tileset Lookup Address
-; B = Width in tiles
-; C = Height in tiles
-RENDER_Tilemap:
-                            ; Store some details
-                            ld      (_TileLookupSMC + 1), de
-                            ld      d, 0
-                            
-                            ; Loop through all the vertical tiles
-_HeightLoop:
-                            push    bc
-
-                            ; Reset the width counter
-                            ld      b, c
-                            ld      e, 0
-
-                            ; Loop through all the horizontal tiles
-_WidthLoop:
-                            ; Read the tile we want
+; HL = Address of the restore buffer
+SPRITE_EraseAll:                    
+                            ; Check there is some data
                             ld      a, (hl)
+                            cp      255
+                            ret     z
+                            
+                            ; We do so get the address in de
+                            ld      d, a
                             inc     hl
-                            push    hl
+                            ld      e, (hl)
+                            inc     hl
 
-_TileLookupSMC:             ld      hl, 0
-                            call    RENDER_DrawTile6x6
+                            ; Replace 12x12 pixels
+                            ld      b, 12
+.YLoop:
+                            push    bc
+                            ldi
+                            ldi
+                            ldi
+                            ldi
+                            ldi
+                            ldi
 
-                            pop     hl
-
-                            ; Move onto next tile
-                            inc     e
-
-                            djnz    _WidthLoop
-
-                            ; Move onto next line
-                            inc     d
+                            ex      de, hl
+                            ld      bc, 128-6
+                            add     hl, bc
+                            ex      de, hl
 
                             pop     bc
-                            djnz    _HeightLoop
+                            djnz    .YLoop
 
-                            ret
+                            ; Loop back and clear the next background
+                            jr      SPRITE_EraseAll
 
 ;********************************************************************
-; A = Tile Number
-; HL = Tileset lookup address
-; D = Y Position in tiles
-; E = X Position in tiles
-RENDER_DrawTile6x6:         
-                            ; Remember the x/y & tileset lookup
-                            push    de
-                            push    hl
-                            push    bc
-
-                            ; Get the position of the tile lookup
-                            ld      b, 0
-                            ld      c, a     
-                            add     hl, bc
-                            add     hl, bc
-                            ld      a, (hl)
-                            inc     hl
-                            ld      h, (hl)
-                            ld      l, a
-
-                            ; HL is now the start of the graphics, Now multiply D by (128*6)
+; HL = Address of the sprite data
+; D = Y Coordinate
+; E = X Cooordinate
+SPRITE_Render12x12:
+                            ; Work out the screen coordinates
                             ld      a, d
-                            add     a, a
-                            add     a, d
+                            srl     a
                             ld      d, a
 
-                            ; Multiply the x position by 6 pixels (3 bytes)
                             ld      a, e
-                            add     a, a
-                            add     a, e
-                            ld      e, a
+                            rra
+                            ld      a, e
+
+                            ; Store the address to restore to
+                            push    de
+                            exx
+                            ld      hl, (BackgroundStoreAddress)
+                            pop     de
+                            ld      (hl), d
+                            inc     hl
+                            ld      (hl), e
+                            inc     hl
+                            exx
 
                             ; Copy the data
-                            ldi
-                            ldi
-                            ldi
+                            ld      b, 12
+_YLoop:
+                            push    bc
+                            ld      b, 6
+_XLoop:
+                            ; Read a byte from the screen
+                            ld      a, (de)
+
+                            ; Store the screen data for replacement
+                            exx
+                            ld      (hl), a
+                            inc     hl
+                            exx
+
+                            ; Mask out the areas for the sprite
+                            and     (hl)
+                            inc     hl
+
+                            ; Or in the graphics
+                            or      (hl)
+                            inc     hl
+
+                            ; Write back to the screen
+                            ld      (de), a
+                            inc     de
+                            djnz    _XLoop
+
+                            ; Step to the next row
                             ex      de, hl
-                            ld      bc, 128-3
+                            ld      bc, 128-6
                             add     hl, bc
                             ex      de, hl
-                            ldi
-                            ldi
-                            ldi
-                            ex      de, hl
-                            ld      bc, 128-3
-                            add     hl, bc
-                            ex      de, hl
-                            ldi
-                            ldi
-                            ldi
-                            ex      de, hl
-                            ld      bc, 128-3
-                            add     hl, bc
-                            ex      de, hl
-                            ldi
-                            ldi
-                            ldi
-                            ex      de, hl
-                            ld      bc, 128-3
-                            add     hl, bc
-                            ex      de, hl
-                            ldi
-                            ldi
-                            ldi
-                            ex      de, hl
-                            ld      bc, 128-3
-                            add     hl, bc
-                            ex      de, hl
-                            ldi
-                            ldi
-                            ldi
+
+                            pop     bc
+                            djnz    _YLoop
+
+                            ; Terminate the sprite redraw
+                            exx     
+                            ld      a, 255
+                            ld      (hl), a
+                            ld      (BackgroundStoreAddress), hl
+                            exx
 
                             ; Exit
-                            pop     bc
-                            pop     hl
-                            pop     de
-
                             ret
-
 
 ;********************************************************************
 ;* Include the extra files
-                            include "Data\Maze.s"
-
+                            include "Includes\Tilemaps.s"
                             include "Includes\LookupTables.s"
                             include "Includes\Variables.s"
+
+                            include "Data\Maze.s"
 
 ;********************************************************************
 

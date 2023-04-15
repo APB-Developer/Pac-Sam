@@ -1,9 +1,24 @@
 ; Script to convert graphics for PacSam
-; First Load the tile image
-LOAD "Source Graphics\Maze.png"
+SET_PALETTE 0, 0, 0, 0
+
+; First Load the sprites
+LOAD "Source Graphics\Sprites.png", NO_RESET
+
+GRAB_SPRITE "Closed", MASK_DATA, 0, 0, 12, 12
+GRAB_SPRITE "Left1", MASK_DATA, 12, 0, 12, 12
+GRAB_SPRITE "Left2", MASK_DATA, 24, 0, 12, 12
+GRAB_SPRITE "Up1", MASK_DATA, 36, 0, 12, 12
+GRAB_SPRITE "Up2", MASK_DATA, 48, 0, 12, 12
+GRAB_SPRITE "Right1", MASK_DATA, 60, 0, 12, 12
+GRAB_SPRITE "Right2", MASK_DATA, 72, 0, 12, 12
+GRAB_SPRITE "Down1", MASK_DATA, 84, 0, 12, 12
+GRAB_SPRITE "Down2", MASK_DATA, 96, 0, 12, 12
+
+; Load the tile image
+LOAD "Source Graphics\Maze.png", NO_RESET
 
 ; Grab the palette
-GRAB_PALETTE "Maze"
+GRAB_PALETTE "Game"
 
 ; Grab a blank tile for tile 0
 GRAB_BLANK_TILE "Maze", 6, 6, 0, 0, 0
